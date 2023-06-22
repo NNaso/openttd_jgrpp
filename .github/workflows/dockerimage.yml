@@ -66,6 +66,7 @@ jobs:
         with:
           push: true
           pull: true
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           build-args: OPENTTD_VERSION=${{ matrix.version }}
           tags: |
             ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
@@ -76,6 +77,7 @@ jobs:
         with:
           push: true
           pull: true
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           build-args: OPENTTD_VERSION=${{ matrix.version }}
           tags: ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ matrix.version }}
       - name: Update latest deployed version
