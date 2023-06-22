@@ -2,7 +2,7 @@
 [![dockeri.co](https://dockeri.co/image/nextek/openttd-jgrpp)](https://hub.docker.com/r/nextek/openttd-jgrpp)
 
 ### An Alpine based image of [bateau/openttd](https://hub.docker.com/r/bateau/openttd)'s docker. ###
-
+### Includes JGGRPP Patches https://github.com/JGRennison/OpenTTD-patches ###
 ## Usage ##
 
 ### File locations ###
