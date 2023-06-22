@@ -6,13 +6,6 @@
 ### Includes JGRPP Patches https://github.com/JGRennison/OpenTTD-patches ###
 ## Usage ##
 
-### File locations ###
-This image is supplied with a user named `openttd`.  
-Openttd server is run as this user and subsequently its home folder will be `/home/openttd`.  
-Openttd on linux uses `.openttd` in the users homefolder to store configurations, savefiles and other miscellaneous files.  
-If you want to your local files accessible to openttd server inside the container you need to mount them inside with `-v` parameter (see https://docs.docker.com/engine/reference/commandline/run/ for more details on -v)
-
-
 ### Environment variables ###
 These environment variables can be altered to change the behavior of the application inside the container.  
 To set a new value to an enviroment variable use docker's `-e ` parameter (see https://docs.docker.com/engine/reference/commandline/run/ for more details)  
@@ -33,31 +26,36 @@ If your openttd config is set up to listen on port 3979 you need to map the cont
 
 ### Examples ###
 
-Run Openttd and expose the default ports.  
+#### docker run ####
+```
+docker run --name OpenTTD_Server -d \
+    -p 3979:3979/tcp \
+    -p 3979:3979/udp \
+    -e PUID=1000  \
+    -e PGID=1000 \
+    -e "loadgame=last-autosave"
+    -v /path/to/your/.openttd:/home/openttd/.openttd \
+    --restart=unless-stopped \
+    nextek/openttd-jgrpp:latest
+```
 
-    docker run -d -p 3979:3979/tcp -p 3979:3979/udp bateau/openttd:latest
-
-Run Openttd with random port assignment.  
-
-    docker run -d -P bateau/openttd:latest
-
-Its set up to not load any games by default (new game) and it can be run without mounting a .openttd folder.  
-However, if you want to save/load your games, mounting a .openttd folder is required.
-
-    docker run -v /path/to/your/.openttd:/home/openttd/.openttd -p 3979:3979/tcp -p 3979:3979/udp bateau/openttd:latest
-
-Set UID and GID of user in container to be the same as your user outside with seting env PUID and PGID.
-For example
-
-    docker run -e PUID=1000 -e PGID=1000 -v /path/to/your/.openttd:/home/openttd/.openttd -p 3979:3979/tcp -p 3979:3979/udp bateau/openttd:latest
-
-For other save games use (/home/openttd/.openttd/save/ is appended to savename when passed to openttd command)
-
-    docker run -e "loadgame=true" -e "savename=game.sav" -v /path/to/your/.openttd:/home/openttd/.openttd -p 3979:3979/tcp -p 3979:3979/udp bateau/openttd:latest
-
-For example to run server and load my savename game.sav:
-
-    docker run -d -p 3979:3979/tcp -p 3979:3979/udp -v /home/<your_username>/.openttd:/home/openttd/.openttd -e PUID=<your_userid> -e PGID=<your_groupid> -e "loadgame=true" -e "savename=game.sav" bateau/openttd:latest
+#### Docker Compose ####
+```MiniYAML
+version: "3"
+services:
+  OpenTTD_Server:
+    image: nextek/openttd-jgrpp:latest
+    restart: unless-stopped
+    ports:
+      - 3979:3979/udp
+      - 3979:3979/tcp
+    environment:
+      - loadgame=last-autosave
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /path/to/your/.openttd:/home/openttd/.openttd
+```
 
 ## Kubernetes ##
 
@@ -68,5 +66,6 @@ just run
 
 and it will apply configmap with openttd.cfg, deployment and service listening on port 31979 UDP/TCP.
 
-## Other tags ##
-   * See [nextek/openttd](https://hub.docker.com/r/nextek/openttd) on docker hub for other tags
+## Links ##
+   * Docker Hub -  [nextek/openttd-jgrpp](https://hub.docker.com/r/nextek/openttd-jgrpp)
+   * Github -  [nnaso/openttd_jgrpp](https://github.com/NNaso/openttd_jgrpp)
