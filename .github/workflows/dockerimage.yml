@@ -24,7 +24,7 @@ jobs:
         id: get_versions
         # yamllint disable-line rule:line-length
         run: |
-          echo "::set-output name=versions::$(curl -s -H 'Accept: application/vnd.github.v3+json' https://api.github.com/repos/JGRennison/OpenTTD-patches/releases | jq -cMr '[.[:5]|.[]|.tag_name]')"
+          echo "::set-output name=versions::$(curl -s -H 'Accept: application/vnd.github.v3+json' https://api.github.com/repos/JGRennison/OpenTTD-patches/releases | jq -cMr '[.[:3]|.[]|.tag_name]')"
           echo "::set-output name=latest::$(curl -s -H 'Accept: application/vnd.github.v3+json' https://api.github.com/repos/JGRennison/OpenTTD-patches/releases | jq -cMr '([.[]|select(all(.tag_name; contains("beta")|not))])|.[:1]|.[].tag_name')"
       - name: Output version string
         run: |
