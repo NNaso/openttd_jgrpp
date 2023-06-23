@@ -43,7 +43,7 @@ RUN mkdir -p /app/data/baseset/ \
 FROM alpine:latest
 ARG OPENTTD_VERSION="jgrpp-0.54.2"
 RUN mkdir -p /usr/games/openttd/ \
-    && apk --no-cache add tini xz libstdc++ libgcc
+    && apk --no-cache add tini xz libstdc++ libgcc zlib
 
 COPY --from=td_build /app /usr/games/openttd
 COPY --chown=1000:1000 --chmod=+x openttd.sh /openttd.sh
