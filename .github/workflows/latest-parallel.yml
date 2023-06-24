@@ -41,7 +41,7 @@ jobs:
     steps:
       - name: Clone OpenTTD Source
         run: |
-          git clone --depth 1 --branch "${{ needs.get_versions.outputs.target }}" https://github.com/OpenTTD/OpenTTD.git ./src
+          git clone --depth 1 --branch "${{ needs.get_versions.outputs.target }}" https://github.com/JGRennison/OpenTTD-patches.git ./src
       - name: Output OpenTTD Path
         run: |
           ls ${{ github.workspace }}/src
