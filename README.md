@@ -33,7 +33,7 @@ docker run --name OpenTTD_Server -d \
     -p 3979:3979/udp \
     -e PUID=1000  \
     -e PGID=1000 \
-    -e "loadgame=last-autosave"
+    -e "loadgame=last-autosave" \
     -v /path/to/your/.openttd:/home/openttd/.openttd \
     --restart=unless-stopped \
     nextek/openttd-jgrpp:latest
