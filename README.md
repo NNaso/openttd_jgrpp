@@ -1,4 +1,4 @@
-[![Docker Image CI](https://github.com/NNaso/openttd_jgrpp/actions/workflows/dockerimage.yml/badge.svg)](https://github.com/NNaso/openttd_jgrpp/actions/workflows/dockerimage.yml)
+[![Docker Build Latest](https://github.com/NNaso/openttd_jgrpp/actions/workflows/latest-parallel.yml/badge.svg)](https://github.com/NNaso/openttd_jgrpp/actions/workflows/latest-parallel.yml)
 
 [![dockeri.co](https://dockeri.co/image/nextek/openttd-jgrpp)](https://hub.docker.com/r/nextek/openttd-jgrpp)
 
