@@ -3,32 +3,47 @@ FROM alpine:latest AS td_build
 ARG OPENTTD_VERSION="jgrpp-0.54.2"
 ARG OPENGFX_VERSION="7.1"
 
-RUN mkdir -p /config \
-    && mkdir /tmp/src
+RUN mkdir -p /config 
 
 # Install build dependencies
 RUN apk --no-cache add \
     unzip \
     wget \
     git \
-    g++ \
+    libc-dev \
     make \
     cmake \
     patch \
     xz-dev \
     pkgconfig \
-    bash
+    zlib \
+    libpng \
+    lzo \
+    musl-dev gcc nlohmann-json libcurl sdl2 libpng libgcc libtool linux-headers g++ curl
 
 # Build OpenTTD itself
-WORKDIR /tmp/src
+RUN mkdir -p /tmp/build
+COPY --from=openttd . /tmp/src
+WORKDIR /tmp/build
 
-RUN git clone https://github.com/JGRennison/OpenTTD-patches.git . \
-    && git fetch --tags \
-    && git checkout ${OPENTTD_VERSION}
+# RUN git clone https://github.com/JGRennison/OpenTTD-patches.git . \
+#     && git fetch --tags \
+#     && git checkout ${OPENTTD_VERSION}
 
-# Perform the build with the build script (1.11 switches to cmake, so use a script for decision making)
-ADD builder.sh /usr/local/bin/builder
-RUN chmod +x /usr/local/bin/builder && builder && rm /usr/local/bin/builder
+ARG TARGETPLATFORM
+ARG TARGETARCH
+RUN cd /tmp/build && \
+    cmake \
+    -DOPTION_DEDICATED=ON \
+    -DOPTION_INSTALL_FHS=OFF \
+    -DCMAKE_BUILD_TYPE=release \
+    -DGLOBAL_DIR=/app \
+    -DPERSONAL_DIR=/ \
+    -DCMAKE_BINARY_DIR=bin \
+    -DCMAKE_INSTALL_PREFIX=/app \
+    ../src 
+RUN make CMAKE_BUILD_TYPE=release -j"$(nproc)" && \
+    make install
 
 # Add the latest graphics files
 ## Install OpenGFX

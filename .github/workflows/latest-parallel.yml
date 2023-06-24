@@ -1,0 +1,181 @@
+name: Docker Build Latest
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  # push:
+  #   branches: [master]
+#   pull_request:
+#     branches: [master]
+  workflow_dispatch:
+    branches: [master]
+
+env:
+  DOCKER_REPO_NAME: nextek
+  DOCKER_IMAGE_NAME: openttd-jgrpp
+
+jobs:
+  get_versions:
+    name: Fetch OTTD Versions
+    runs-on: ubuntu-latest
+    steps:
+      - name: get versions
+        id: get_versions
+        # yamllint disable-line rule:line-length
+        run: |
+          echo "target=$(curl -s -H 'Accept: application/vnd.github.v3+json' https://api.github.com/repos/JGRennison/OpenTTD-patches/releases | jq -cMr '.[:1]|.[]|.tag_name')" >> $GITHUB_OUTPUT
+          echo "latest=$(curl -s -H 'Accept: application/vnd.github.v3+json' https://api.github.com/repos/JGRennison/OpenTTD-patches/releases | jq -cMr '([.[]|select(all(.tag_name; contains("beta")|not))])|.[:1]|.[].tag_name')" >> $GITHUB_OUTPUT
+      - name: Output version string
+        run: |
+          echo ${{ steps.get_versions.outputs.target }}
+          echo ${{ steps.get_versions.outputs.latest }}
+    outputs:
+      target: ${{ steps.get_versions.outputs.target }}
+      latest: ${{ steps.get_versions.outputs.latest }}
+
+  fetch_openttd_source:
+    name: Cache OTTD Source
+    runs-on: ubuntu-latest
+    needs: get_versions
+    if: vars.LATEST_DEPLOY != needs.get_versions.outputs.target
+    steps:
+      - name: Clone OpenTTD Source
+        run: |
+          git clone --depth 1 --branch "${{ needs.get_versions.outputs.target }}" https://github.com/OpenTTD/OpenTTD.git ./src
+      - name: Output OpenTTD Path
+        run: |
+          ls ${{ github.workspace }}/src
+          echo Version:
+          head -1 ${{ github.workspace }}/src/changelog.txt
+      - name: Cache src
+        id: cache-src
+        uses: actions/cache/save@v3
+        with:
+          path: ./src
+          key: ottd-${{ needs.get_versions.outputs.target }}
+
+  build-push:
+    name: Build OTTD Docker
+    runs-on: ubuntu-latest
+    needs: [get_versions, fetch_openttd_source]
+    strategy:
+      matrix:
+        include:
+          - platform_tag: amd64
+            platform: linux/amd64
+          - platform_tag: i386
+            platform: linux/386
+          - platform_tag: arm64
+            platform: linux/arm64
+          - platform_tag: armv7
+            platform: linux/arm/v7
+          - platform_tag: armv6
+            platform: linux/arm/v6
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Context for Buildx
+        id: buildx-context
+        run: |
+          docker context create builders
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          version: latest
+          endpoint: builders
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
+
+      - name: Cache src
+        id: cache-src
+        uses: actions/cache/restore@v3
+        with:
+          path: ./src
+          key: ottd-${{ needs.get_versions.outputs.target }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}
+          flavor: |
+            latest=false
+            suffix=-${{ matrix.platform_tag }}
+          tags: |
+            type=raw,value=latest,enable=${{ needs.get_versions.outputs.target == needs.get_versions.outputs.latest }}
+            type=raw,value=${{ needs.get_versions.outputs.target }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: ${{ matrix.platform }}
+          build-contexts: openttd=${{ github.workspace }}/src
+          tags: ${{ steps.meta.outputs.tags }}
+
+  build-manifest:
+    name: Create Multi-Platform Manifest
+    runs-on: ubuntu-latest
+    needs: [get_versions, build-push]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
+          
+      - name: Create Version manifest and push
+        run: |
+          docker manifest create \
+            ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }} \
+            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }}-amd64 \
+            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }}-i386 \
+            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }}-arm64 \
+            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }}-armv7 \
+            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }}-armv6 
+          docker manifest push ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }}
+
+      - name: Create latest manifest and push
+        if: needs.get_versions.outputs.latest == needs.get_versions.outputs.target
+        run: |
+          docker manifest create \
+            ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest \
+            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest-amd64 \
+            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest-i386 \
+            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest-arm64 \
+            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest-armv7 \
+            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest-armv6
+          docker manifest push ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+
+      - name: Update latest deployed version
+        run: |
+          curl -X PATCH https://api.github.com/repositories/655397334/actions/variables/LATEST_DEPLOY -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.WEB_API }}" -H "X-GitHub-Api-Version: 2022-11-28" -d '{"name":"LATEST_DEPLOY", "value":"${{ needs.get_versions.outputs.latest }}"}'
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }}'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      # - name: Upload Trivy scan results to GitHub Security tab
+      #   uses: github/codeql-action/upload-sarif@v2
+      #   if: always()
+      #   with:
+      #     sarif_file: 'trivy-results.sarif'
