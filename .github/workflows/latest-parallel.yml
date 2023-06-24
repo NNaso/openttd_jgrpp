@@ -56,21 +56,26 @@ jobs:
 
   build-push:
     name: Build OTTD Docker
-    runs-on: ubuntu-latest
     needs: [get_versions, fetch_openttd_source]
     strategy:
       matrix:
         include:
           - platform_tag: amd64
             platform: linux/amd64
+            runner: [ubuntu-latest]
           - platform_tag: i386
             platform: linux/386
+            runner: [ubuntu-latest]
           - platform_tag: arm64
             platform: linux/arm64
+            runner: [self-hosted, linux, arm]
           - platform_tag: armv7
             platform: linux/arm/v7
+            runner: [self-hosted, linux, arm]
           - platform_tag: armv6
             platform: linux/arm/v6
+            runner: [self-hosted, linux, arm]
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v3
 
