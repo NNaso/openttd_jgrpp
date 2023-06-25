@@ -99,7 +99,12 @@ jobs:
           path: ./src
           key: ottd-${{ needs.get_versions.outputs.target }}
           enableCrossOsArchive: true
-          fail-on-cache-miss: true
+
+      - name: Download OTTD Source
+        if: steps.cache-src.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch "${{ needs.get_versions.outputs.target }}" https://github.com/JGRennison/OpenTTD-patches.git ./src
+          head -1 ${{ github.workspace }}/src/changelog.txt
 
       - name: Docker meta
         id: meta
