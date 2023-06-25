@@ -69,13 +69,13 @@ jobs:
             runner: [ubuntu-latest]
           - platform_tag: arm64
             platform: linux/arm64
-            runner: [self-hosted, linux, arm]
+            runner: [self-hosted, linux, x64]
           - platform_tag: armv7
             platform: linux/arm/v7
-            runner: [self-hosted, linux, arm]
+            runner: [self-hosted, linux, x64]
           - platform_tag: armv6
             platform: linux/arm/v6
-            runner: [self-hosted, linux, arm]
+            runner: [self-hosted, linux, x64]
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v3
