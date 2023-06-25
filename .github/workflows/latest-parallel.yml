@@ -72,7 +72,7 @@ jobs:
             runner: [self-hosted, linux, x64]
           - platform_tag: armv7
             platform: linux/arm/v7
-            runner: [self-hosted, linux, x64]
+            runner: [ubuntu-latest]
           - platform_tag: armv6
             platform: linux/arm/v6
             runner: [self-hosted, linux, x64]
