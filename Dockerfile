@@ -43,9 +43,8 @@ RUN cd /tmp/build && \
     -DCMAKE_INSTALL_PREFIX=/app \
     ../src 
 
-ARG NPROC=$(nproc)
-RUN echo Num Processors: ${NPROC}
-RUN make CMAKE_BUILD_TYPE=release -j${NPROC} && \
+RUN echo Num Processors: $(nproc)
+RUN make CMAKE_BUILD_TYPE=release -j$(nproc) && \
     make install
 
 # Add the latest graphics files
