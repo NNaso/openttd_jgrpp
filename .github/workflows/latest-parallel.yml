@@ -53,6 +53,7 @@ jobs:
         with:
           path: ./src
           key: ottd-${{ needs.get_versions.outputs.target }}
+          enableCrossOsArchive: true
 
   build-push:
     name: Build OTTD Docker
@@ -97,6 +98,8 @@ jobs:
         with:
           path: ./src
           key: ottd-${{ needs.get_versions.outputs.target }}
+          enableCrossOsArchive: true
+          fail-on-cache-miss: true
 
       - name: Docker meta
         id: meta
