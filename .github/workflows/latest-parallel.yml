@@ -91,6 +91,13 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
+          
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache src
         id: cache-src
@@ -110,7 +117,9 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}
+          images: |
+            ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}
+            ghcr.io/${{ github.repository }}
           flavor: |
             latest=false
             suffix=-${{ matrix.platform_tag }}
@@ -145,6 +154,13 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
           
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
       - name: Create Version manifest and push
         run: |
           docker manifest create \
@@ -167,6 +183,35 @@ jobs:
             --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest-armv7 \
             --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest-armv6
           docker manifest push ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+          
+      - name: Tolower - repository_owner
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >>${GITHUB_ENV}
+        env:
+          OWNER: '${{ github.repository }}'
+          
+      - name: GHCR Create version manifest and push
+        run: |
+          docker manifest create \
+            ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }} \
+            --amend ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }}-amd64 \
+            --amend ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }}-i386 \
+            --amend ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }}-arm64 \
+            --amend ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }}-armv7 \
+            --amend ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }}-armv6 
+          docker manifest push ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }}
+
+      - name: GHCR Create latest manifest and push
+        if: needs.get_versions.outputs.latest == needs.get_versions.outputs.target
+        run: |
+          docker manifest create \
+            ghcr.io/${{ env.OWNER_LC }}:latest \
+            --amend ghcr.io/${{ env.OWNER_LC }}:latest-amd64 \
+            --amend ghcr.io/${{ env.OWNER_LC }}:latest-i386 \
+            --amend ghcr.io/${{ env.OWNER_LC }}:latest-arm64 \
+            --amend ghcr.io/${{ env.OWNER_LC }}:latest-armv7 \
+            --amend ghcr.io/${{ env.OWNER_LC }}:latest-armv6
+          docker manifest push ghcr.io/${{ env.OWNER_LC }}:latest
 
       - name: Update latest deployed version
         run: |
