@@ -23,8 +23,29 @@ jobs:
         id: get_versions
         # yamllint disable-line rule:line-length
         run: |
-          echo "target=$(curl -s -H 'Accept: application/vnd.github.v3+json' https://api.github.com/repos/JGRennison/OpenTTD-patches/releases | jq -cMr '.[:1]|.[]|.tag_name')" >> $GITHUB_OUTPUT
-          echo "latest=$(curl -s -H 'Accept: application/vnd.github.v3+json' https://api.github.com/repos/JGRennison/OpenTTD-patches/releases | jq -cMr '([.[]|select(all(.tag_name; contains("beta")|not))])|.[:1]|.[].tag_name')" >> $GITHUB_OUTPUT
+          i=0
+          while [[ $i -lt 5 ]]; do
+            {
+              target_version=$(curl -s -H 'Accept: application/vnd.github.v3+json' https://api.github.com/repos/JGRennison/OpenTTD-patches/releases | jq -cMr '.[:1]|.[]|.tag_name')
+              latest_version=$(curl -s -H 'Accept: application/vnd.github.v3+json' https://api.github.com/repos/JGRennison/OpenTTD-patches/releases | jq -cMr '([.[]|select(all(.tag_name; contains("beta")|not))])|.[:1]|.[].tag_name')
+            } || { 
+              echo "json error" 
+            }
+
+            if [ ! -z $target_version ] && [ ! -z $latest_version ]; then
+              echo "Success"
+              echo "target=$target_version" >> $GITHUB_OUTPUT
+              echo "latest=$latest_version" >> $GITHUB_OUTPUT
+              break
+            fi
+            echo "Failed"
+            i=$((i + 1))
+            sleep 1
+          done
+
+          if [ -z $target_version ] || [ -z $latest_version ]; then
+            exit 1
+          fi
       - name: Output version string
         run: |
           echo ${{ steps.get_versions.outputs.target }}
