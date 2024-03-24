@@ -1,14 +1,17 @@
-name: Docker Build Latest
+name: Docker Build Latest (Cross-compile)
 
 on:
-  # schedule:
-  #   - cron: '0 */6 * * *'
-  # push:
-  #   branches: [master]
-#   pull_request:
-#     branches: [master]
+  schedule:
+    - cron: '0 */6 * * *'
+
   workflow_dispatch:
     branches: [master]
+    inputs:
+      skip_version_check:
+        description: Skip checking the version last build in vars
+        type: boolean
+        required: false
+        default: false
 
 env:
   DOCKER_REPO_NAME: nextek
@@ -26,8 +29,8 @@ jobs:
           i=0
           while [[ $i -lt 5 ]]; do
             {
-              target_version=$(curl -s -H 'Accept: application/vnd.github.v3+json' https://api.github.com/repos/JGRennison/OpenTTD-patches/releases | jq -cMr '.[:1]|.[]|.tag_name')
-              latest_version=$(curl -s -H 'Accept: application/vnd.github.v3+json' https://api.github.com/repos/JGRennison/OpenTTD-patches/releases | jq -cMr '([.[]|select(all(.tag_name; contains("beta")|not))])|.[:1]|.[].tag_name')
+              target_version=$(curl -s -H 'Accept: application/vnd.github.v3+json' https://api.github.com/repos/JGRennison/OpenTTD-patches/releases  | jq -cMr '.[:1]|.[]|.tag_name')
+              latest_version=$(curl -s -H 'Accept: application/vnd.github.v3+json' https://api.github.com/repos/JGRennison/OpenTTD-patches/releases  | jq -cMr '([.[]|select(all(.tag_name; contains("beta")|not))])|([.[]|select(all(.tag_name; contains("RC")|not))])|.[:1]|.[].tag_name')
             } || { 
               echo "json error" 
             }
@@ -58,7 +61,7 @@ jobs:
     name: Cache OTTD Source
     runs-on: ubuntu-latest
     needs: get_versions
-    if: vars.LATEST_DEPLOY != needs.get_versions.outputs.target
+    if: vars.LATEST_DEPLOY != needs.get_versions.outputs.target || ${{ inputs.skip_version_check == 'true' }}
     steps:
       - name: Clone OpenTTD Source
         run: |
@@ -74,7 +77,6 @@ jobs:
         with:
           path: ./src
           key: ottd-${{ needs.get_versions.outputs.target }}
-          enableCrossOsArchive: true
 
   build-push:
     name: Build OTTD Docker
@@ -104,9 +106,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
@@ -129,7 +128,6 @@ jobs:
         with:
           path: ./src
           key: ottd-${{ needs.get_versions.outputs.target }}
-          enableCrossOsArchive: true
 
       - name: Download OTTD Source
         if: steps.cache-src.outputs.cache-hit != 'true'
@@ -155,7 +153,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: ./Dockerfile
+          file: ./Dockerfile_Crosscompile
           push: true
           platforms: ${{ matrix.platform }}
           build-contexts: openttd=${{ github.workspace }}/src
@@ -173,9 +171,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -189,28 +184,24 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
           
-      - name: Create Version manifest and push
+      - name: Docker Hub Create version manifest and push
         run: |
-          docker manifest create \
-            ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }} \
-            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }}-amd64 \
-            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }}-i386 \
-            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }}-arm64 \
-            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }}-armv7 \
-            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }}-armv6 
-          docker manifest push ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }}
+          docker buildx imagetools create -t ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }} \
+            ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }}-amd64 \
+            ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }}-i386 \
+            ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }}-arm64 \
+            ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }}-armv7 \
+            ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.get_versions.outputs.target }}-armv6 
 
-      - name: Create latest manifest and push
+      - name: Docker Hub Create latest manifest and push
         if: needs.get_versions.outputs.latest == needs.get_versions.outputs.target
         run: |
-          docker manifest create \
-            ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest \
-            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest-amd64 \
-            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest-i386 \
-            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest-arm64 \
-            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest-armv7 \
-            --amend ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest-armv6
-          docker manifest push ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+          docker buildx imagetools create -t ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest \
+            ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest-amd64 \
+            ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest-i386 \
+            ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest-arm64 \
+            ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest-armv7 \
+            ${{ env.DOCKER_REPO_NAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest-armv6
           
       - name: Tolower - repository_owner
         run: |
@@ -220,30 +211,26 @@ jobs:
           
       - name: GHCR Create version manifest and push
         run: |
-          docker manifest create \
-            ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }} \
-            --amend ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }}-amd64 \
-            --amend ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }}-i386 \
-            --amend ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }}-arm64 \
-            --amend ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }}-armv7 \
-            --amend ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }}-armv6 
-          docker manifest push ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }}
+          docker buildx imagetools create -t ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }} \
+            ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }}-amd64 \
+            ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }}-i386 \
+            ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }}-arm64 \
+            ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }}-armv7 \
+            ghcr.io/${{ env.OWNER_LC }}:${{ needs.get_versions.outputs.target }}-armv6 
 
       - name: GHCR Create latest manifest and push
         if: needs.get_versions.outputs.latest == needs.get_versions.outputs.target
         run: |
-          docker manifest create \
-            ghcr.io/${{ env.OWNER_LC }}:latest \
-            --amend ghcr.io/${{ env.OWNER_LC }}:latest-amd64 \
-            --amend ghcr.io/${{ env.OWNER_LC }}:latest-i386 \
-            --amend ghcr.io/${{ env.OWNER_LC }}:latest-arm64 \
-            --amend ghcr.io/${{ env.OWNER_LC }}:latest-armv7 \
-            --amend ghcr.io/${{ env.OWNER_LC }}:latest-armv6
-          docker manifest push ghcr.io/${{ env.OWNER_LC }}:latest
+          docker buildx imagetools create -t ghcr.io/${{ env.OWNER_LC }}:latest \
+            ghcr.io/${{ env.OWNER_LC }}:latest-amd64 \
+            ghcr.io/${{ env.OWNER_LC }}:latest-i386 \
+            ghcr.io/${{ env.OWNER_LC }}:latest-arm64 \
+            ghcr.io/${{ env.OWNER_LC }}:latest-armv7 \
+            ghcr.io/${{ env.OWNER_LC }}:latest-armv6
 
       - name: Update latest deployed version
         run: |
-          curl -X PATCH https://api.github.com/repositories/657046602/actions/variables/LATEST_DEPLOY -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.WEB_API }}" -H "X-GitHub-Api-Version: 2022-11-28" -d '{"name":"LATEST_DEPLOY", "value":"${{ needs.get_versions.outputs.latest }}"}'
+          curl -X PATCH https://api.github.com/repositories/655397334/actions/variables/LATEST_DEPLOY -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.WEB_API }}" -H "X-GitHub-Api-Version: 2022-11-28" -d '{"name":"LATEST_DEPLOY", "value":"${{ needs.get_versions.outputs.latest }}"}'
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master

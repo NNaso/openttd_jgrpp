@@ -8,14 +8,12 @@ savegame="${savepath}/${savename}"
 LOADGAME_CHECK="${loadgame}x"
 loadgame=${loadgame:-'false'}
 execpath="/usr/games/openttd/openttd"
+configpath="/home/openttd/.openttd/openttd.cfg"
 
 PUID=${PUID:-911}
 PGID=${PGID:-911}
 PHOME=${PHOME:-"/home/openttd"}
 USER=${USER:-"openttd"}
-
-addgroup --gid "${PGID}" --system openttd
-adduser openttd --disabled-password --uid "${PUID}" -s /bin/sh -G openttd
 
 chmod +x $execpath
 
@@ -31,6 +29,9 @@ fi
 
 mkdir -p ${savepath}
 chown ${USER}:${USER} -R ${savepath}
+
+mkdir -p ${savepath}/autosave/
+chown ${USER}:${USER} -R ${savepath}/autosave/
 
 #fix home folder permissions
 chown ${USER}:${USER} -R ${PHOME}
@@ -54,7 +55,7 @@ if [ ${LOADGAME_CHECK} != "x" ]; then
                         if [ -f  ${savegame} ]; then
                                 echo "We are loading a save game!"
                                 echo "Lets load ${savegame}"
-                                su -l openttd -c "$execpath -D -g ${savegame} -x -d ${DEBUG}"
+                                su -l openttd -c "$execpath -D -g ${savegame} -c ${configpath} -d ${DEBUG}"
                                 exit 0
                         else
                                 echo "${savegame} not found..."
@@ -63,21 +64,21 @@ if [ ${LOADGAME_CHECK} != "x" ]; then
                 ;;
                 'false')
                         echo "Creating a new game."
-                        su -l openttd -c "$execpath -D -x -d ${DEBUG}"
+                        su -l openttd -c "$execpath -D -c ${configpath} -d ${DEBUG}"
                         exit 0
                 ;;
                 'last-autosave')
 
-			savegame=${savepath}/autosave/`ls -rt ${savepath}/autosave/ | tail -n1`
+			savegame=${savepath}/autosave/$(ls -rt ${savepath}/autosave/ | tail -n1)
 
-			if [ -r ${savegame} ]; then
+			if [ -f ${savegame} ]; then
 	                        echo "Loading ${savegame}"
-        	                su -l openttd -c "$execpath -D -g ${savegame} -x -d ${DEBUG}"
+        	                su -l openttd -c "$execpath -D -g ${savegame} -c ${configpath} -d ${DEBUG}"
                 	        exit 0
 			else
 				echo "${savegame} not found..."
 	                        echo "Creating a new game."
-	                        su -l openttd -c "$execpath -D -x -d ${DEBUG}"
+	                        su -l openttd -c "$execpath -D -c ${configpath} -d ${DEBUG}"
 	                        exit 0
 			fi
                 ;;
@@ -87,12 +88,12 @@ if [ ${LOADGAME_CHECK} != "x" ]; then
 
 			if [ -r ${savegame} ]; then
 	                        echo "Loading ${savegame}"
-        	                su -l openttd -c "$execpath -D -g ${savegame} -x -d ${DEBUG}"
+        	                su -l openttd -c "$execpath -D -g ${savegame} -c ${configpath} -d ${DEBUG}"
                 	        exit 0
 			else
 				echo "${savegame} not found..."
 				echo "Creating a new game."
-                        	su -l openttd -c "$execpath -D -x -d ${DEBUG}"
+                        	su -l openttd -c "$execpath -D -c ${configpath} -d ${DEBUG}"
                         	exit 0
 			fi
                 ;;
@@ -103,6 +104,6 @@ if [ ${LOADGAME_CHECK} != "x" ]; then
         esac
 else
 	echo "\$loadgame (\"${loadgame}\") not set, starting new game"
-        su -l openttd -c "$execpath -D -x"
+        su -l openttd -c "$execpath -D -c ${configpath}"
         exit 0
 fi

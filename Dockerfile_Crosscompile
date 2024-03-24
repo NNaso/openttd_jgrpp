@@ -1,0 +1,109 @@
+FROM --platform=$BUILDPLATFORM tonistiigi/xx AS xx
+#TTD Build step image
+FROM --platform=$BUILDPLATFORM alpine:latest AS td_build
+
+COPY --from=xx / /
+ARG TARGETPLATFORM
+RUN apk update \
+    && apk upgrade \
+    && apk add \
+    build-base \
+    unzip \
+    wget \
+    git \
+    cmake \
+    patch \
+    pkgconfig \
+    ninja \
+    clang lld
+
+RUN xx-apk --no-cache --no-scripts add musl-dev build-base llvm-static llvm-dev clang-static clang-dev zlib xz-dev lld \
+    gcc nlohmann-json libcurl sdl2 libpng libgcc libtool linux-headers g++ curl lzo zlib-dev curl-dev
+
+RUN mkdir -p /config \
+    && mkdir -p /main
+
+RUN mkdir -p /tmp/tools
+COPY --from=openttd . /tmp/src
+WORKDIR /tmp/tools
+
+#Build Native Tools (usually amd64 on github runners)
+RUN cd /tmp/tools && \
+    cmake \
+    -B build \
+    -D CMAKE_C_COMPILER=clang \
+    -D CMAKE_CXX_COMPILER=clang++ \
+    -D CMAKE_ASM_COMPILER=clang \
+    -D OPTION_DEDICATED=ON \
+    -D OPTION_INSTALL_FHS=OFF \
+    -D CMAKE_BUILD_TYPE=release \
+    -D GLOBAL_DIR=/tools \
+    -D PERSONAL_DIR=/ \
+    -D CMAKE_BINARY_DIR=bin \
+    -D CMAKE_INSTALL_PREFIX=/tools \
+    -D OPTION_TOOLS_ONLY=ON \
+    -G Ninja \
+    ../src 
+
+RUN echo Num Processors: $(nproc)
+RUN ninja -C build -j$(nproc) tools
+
+
+#Cross compile Openttd
+RUN mkdir -p /tmp/build
+WORKDIR /tmp/build
+
+RUN cd /tmp/build && \
+    cmake $(xx-clang --print-cmake-defines)\
+    -B build \
+    -D CMAKE_SYSTEM_PROCESSOR=${TARGETPLATFORM} \
+    -D CMAKE_C_COMPILER=clang \
+    -D CMAKE_CXX_COMPILER=clang++ \
+    -D CMAKE_ASM_COMPILER=clang \
+    -D PKG_CONFIG_EXECUTABLE="$(xx-clang --print-prog-name=pkg-config)" \
+    -D CMAKE_C_COMPILER_TARGET="$(xx-clang --print-target-triple)" \
+    -D CMAKE_CXX_COMPILER_TARGET="$(xx-clang++ --print-target-triple)" \
+    -D CMAKE_ASM_COMPILER_TARGET="$(xx-clang --print-target-triple)" \
+    -D OPTION_DEDICATED=ON \
+    -D OPTION_INSTALL_FHS=OFF \
+    -D CMAKE_BUILD_TYPE=release \
+    -D GLOBAL_DIR=/app \
+    -D PERSONAL_DIR=/ \
+    -D CMAKE_BINARY_DIR=bin \
+    -D CMAKE_INSTALL_PREFIX=/app \
+    -D HOST_BINARY_DIR=/tmp/tools/build \
+    -G Ninja \
+    ../src
+
+RUN echo Num Processors: $(nproc)
+RUN ninja -C build -j$(nproc) 
+RUN ninja -C build install
+
+ARG OPENGFX_VERSION="7.1"
+# Add the latest graphics files
+## Install OpenGFX
+RUN mkdir -p /app/data/baseset/ \
+    && cd /app/data/baseset/ \
+    && wget -q https://cdn.openttd.org/opengfx-releases/${OPENGFX_VERSION}/opengfx-${OPENGFX_VERSION}-all.zip \
+    && unzip opengfx-${OPENGFX_VERSION}-all.zip \
+    && tar -xf opengfx-${OPENGFX_VERSION}.tar \
+    && rm -rf opengfx-*.tar opengfx-*.zip
+
+#Create the final distribution image
+FROM --platform=$TARGETPLATFORM alpine:latest
+RUN mkdir -p /usr/games/openttd/ \
+    && apk --no-cache add tini xz libstdc++ libgcc zlib musl libcurl
+
+RUN addgroup --gid 1000 --system openttd
+RUN adduser openttd --disabled-password --uid 1000 -s /bin/sh -G openttd
+
+COPY --from=td_build /app /usr/games/openttd
+COPY --chown=1000:1000 --chmod=+x openttd.sh /openttd.sh
+RUN chmod +x /openttd.sh
+
+ENV PUID=1000
+ENV PGID=1000
+
+EXPOSE 3979/tcp 3979/udp
+
+ENTRYPOINT ["tini", "-vv", "--", "/openttd.sh"]
