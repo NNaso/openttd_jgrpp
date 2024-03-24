@@ -230,7 +230,7 @@ jobs:
 
       - name: Update latest deployed version
         run: |
-          curl -X PATCH https://api.github.com/repositories/655397334/actions/variables/LATEST_DEPLOY -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.WEB_API }}" -H "X-GitHub-Api-Version: 2022-11-28" -d '{"name":"LATEST_DEPLOY", "value":"${{ needs.get_versions.outputs.latest }}"}'
+          curl -X PATCH https://api.github.com/repositories/657046602/actions/variables/LATEST_DEPLOY -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.WEB_API }}" -H "X-GitHub-Api-Version: 2022-11-28" -d '{"name":"LATEST_DEPLOY", "value":"${{ needs.get_versions.outputs.latest }}"}'
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
