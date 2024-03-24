@@ -18,7 +18,7 @@ RUN apk update \
     clang lld
 
 RUN xx-apk --no-cache --no-scripts add musl-dev build-base llvm-static llvm-dev clang-static clang-dev zlib xz-dev lld \
-    gcc nlohmann-json libcurl sdl2 libpng libgcc libtool linux-headers g++ curl lzo zlib-dev curl-dev
+    gcc nlohmann-json libcurl sdl2 libpng libgcc libtool linux-headers g++ curl lzo zlib-dev curl-dev zstd-dev
 
 RUN mkdir -p /config \
     && mkdir -p /main
@@ -92,7 +92,9 @@ RUN mkdir -p /app/data/baseset/ \
 #Create the final distribution image
 FROM --platform=$TARGETPLATFORM alpine:latest
 RUN mkdir -p /usr/games/openttd/ \
-    && apk --no-cache add tini xz libstdc++ libgcc zlib musl libcurl
+    && apk update \
+    && apk upgrade \
+    && apk --no-cache add tini xz libstdc++ libgcc zlib musl libcurl zstd-libs
 
 RUN addgroup --gid 1000 --system openttd
 RUN adduser openttd --disabled-password --uid 1000 -s /bin/sh -G openttd
