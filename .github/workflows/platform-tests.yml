@@ -7,7 +7,7 @@ on:
     branches: [master]
 
 env:
-  GITHUB_REPO: nnaso/openttd-jgrpp
+  GITHUB_REPO: nnaso/openttd_jgrpp
 
 
 jobs:
