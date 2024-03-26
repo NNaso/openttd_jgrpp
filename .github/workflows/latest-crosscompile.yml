@@ -12,6 +12,11 @@ on:
         type: boolean
         required: false
         default: false
+      target_version_override:
+        description: Openttd version to build
+        required: false
+        default: ''
+
 
 env:
   DOCKER_REPO_NAME: nextek
@@ -34,6 +39,10 @@ jobs:
             } || { 
               echo "json error" 
             }
+
+            if [ ! -z ${{ inputs.target_version_override }} ]; then
+              target_version=${{ inputs.target_version_override}}
+            fi
 
             if [ ! -z $target_version ] && [ ! -z $latest_version ]; then
               echo "Success"
@@ -61,7 +70,7 @@ jobs:
     name: Cache OTTD Source
     runs-on: ubuntu-latest
     needs: get_versions
-    if: vars.LATEST_DEPLOY != needs.get_versions.outputs.target || ${{ inputs.skip_version_check:-'false' == 'true' }}
+    if: vars.LATEST_DEPLOY != needs.get_versions.outputs.target || ${{ inputs.skip_version_check == 'true' }}
     steps:
       - name: Clone OpenTTD Source
         run: |
