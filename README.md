@@ -1,4 +1,4 @@
-[![Docker Build Latest](https://github.com/NNaso/openttd_jgrpp/actions/workflows/latest-crosscompile.yml/badge.svg)](https://github.com/NNaso/openttd_jgrpp/)
+[![Docker Build Latest](https://github.com/NNaso/openttd_jgrpp/actions/workflows/latest-crosscompile.yml/badge.svg)](https://github.com/NNaso/openttd_jgrpp/)    [![Platform Tests](https://github.com/NNaso/openttd_jgrpp/actions/workflows/platform-tests.yml/badge.svg)](https://github.com/NNaso/openttd_jgrpp/actions/workflows/platform-tests.yml)
 
 [![dockeri.co](https://dockeri.co/image/nextek/openttd-jgrpp)](https://hub.docker.com/r/nextek/openttd-jgrpp)
 
