@@ -1,4 +1,4 @@
-name: Docker Tests
+name: Platform Tests
 
 on:
   # schedule:
