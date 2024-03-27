@@ -31,7 +31,7 @@ jobs:
           - platform_tag: arm64
             platform: linux/arm64
             runner: [ubuntu-latest]
-            cpu: 'qemu'
+            cpu: 'qemu-aarch64'
           - platform_tag: armv7
             platform: linux/arm/v7
             runner: [ubuntu-latest]
