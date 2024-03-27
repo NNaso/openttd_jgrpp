@@ -56,8 +56,8 @@ jobs:
 
       - name: Docker Run
         run: |
-          cpu_arg=''
-          if [ ! -z ${{ matrix.cpu }} ] 
+          cpu_arg='' 
+          if [ ! -z ${{ matrix.cpu }} ]; then
             cpu_arg='-e QEMU_CPU=${{ matrix.cpu }}'
           fi
 
