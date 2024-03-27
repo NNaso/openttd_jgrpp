@@ -60,5 +60,5 @@ jobs:
 
       - name: Docker Run
         run: |
-          docker run -e QEMU_CPU=${{ matrix.cpu }} --platform ${{ matrix.platform }} --rm --init --entrypoint /bin/sh ghcr.io/${{ env.GITHUB_REPO }}:latest  \
+          docker run -e QEMU_CPU='${{ matrix.cpu }}' --platform ${{ matrix.platform }} --rm --init --entrypoint /bin/sh ghcr.io/${{ env.GITHUB_REPO }}:latest  \
           -c 'arch; (sleep 5; echo "dump_info roadtypes"; sleep 1;  echo "dump_info railtypes"; sleep 1; echo "dump_info cargotypes"; sleep 1; echo "save test_save"; sleep 2; echo "load test_save"; sleep 3; echo "exit" && cat) | ./openttd.sh'
