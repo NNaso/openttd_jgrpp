@@ -31,9 +31,9 @@ WORKDIR /tmp/tools
 RUN cd /tmp/tools && \
     cmake \
     -B build \
-    -D CMAKE_C_COMPILER=clang \
-    -D CMAKE_CXX_COMPILER=clang++ \
-    -D CMAKE_ASM_COMPILER=clang \
+    -D CMAKE_C_COMPILER=clang15 \
+    -D CMAKE_CXX_COMPILER=clang15++ \
+    -D CMAKE_ASM_COMPILER=clang15 \
     -D OPTION_DEDICATED=ON \
     -D OPTION_INSTALL_FHS=OFF \
     -D CMAKE_BUILD_TYPE=release \
@@ -54,16 +54,16 @@ RUN mkdir -p /tmp/build
 WORKDIR /tmp/build
 
 RUN cd /tmp/build && \
-    cmake $(xx-clang --print-cmake-defines)\
+    cmake $(xx-clang15 --print-cmake-defines)\
     -B build \
     -D CMAKE_SYSTEM_PROCESSOR=${TARGETPLATFORM} \
-    -D CMAKE_C_COMPILER=clang \
-    -D CMAKE_CXX_COMPILER=clang++ \
-    -D CMAKE_ASM_COMPILER=clang \
-    -D PKG_CONFIG_EXECUTABLE="$(xx-clang --print-prog-name=pkg-config)" \
-    -D CMAKE_C_COMPILER_TARGET="$(xx-clang --print-target-triple)" \
-    -D CMAKE_CXX_COMPILER_TARGET="$(xx-clang++ --print-target-triple)" \
-    -D CMAKE_ASM_COMPILER_TARGET="$(xx-clang --print-target-triple)" \
+    -D CMAKE_C_COMPILER=clang15 \
+    -D CMAKE_CXX_COMPILER=clang15++ \
+    -D CMAKE_ASM_COMPILER=clang15 \
+    -D PKG_CONFIG_EXECUTABLE="$(xx-clang15 --print-prog-name=pkg-config)" \
+    -D CMAKE_C_COMPILER_TARGET="$(xx-clang15 --print-target-triple)" \
+    -D CMAKE_CXX_COMPILER_TARGET="$(xx-clang15++ --print-target-triple)" \
+    -D CMAKE_ASM_COMPILER_TARGET="$(xx-clang15 --print-target-triple)" \
     -D OPTION_DEDICATED=ON \
     -D OPTION_INSTALL_FHS=OFF \
     -D CMAKE_BUILD_TYPE=release \
