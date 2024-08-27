@@ -1,6 +1,6 @@
 FROM --platform=$BUILDPLATFORM tonistiigi/xx AS xx
 #TTD Build step image
-FROM --platform=$BUILDPLATFORM alpine:3.16 AS td_build
+FROM --platform=$BUILDPLATFORM alpine:latest AS td_build
 
 COPY --from=xx / /
 ARG TARGETPLATFORM
@@ -16,7 +16,7 @@ RUN apk update \
     pkgconfig \
     ninja
 
-RUN xx-apk --no-cache --no-scripts add musl-dev build-base llvm-static llvm-dev clang15-static clang15-dev zlib xz-dev lld \
+RUN xx-apk --no-cache --no-scripts add musl-dev build-base llvm-static llvm-dev clang15 clang15-static clang15-dev zlib xz-dev lld \
     gcc nlohmann-json libcurl sdl2 libpng libgcc libtool linux-headers g++ curl lzo zlib-dev curl-dev zstd-dev
 
 RUN mkdir -p /config \
