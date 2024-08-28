@@ -61,10 +61,10 @@ RUN cd /tmp/build && \
     -D CMAKE_C_COMPILER=clang-15 \
     -D CMAKE_CXX_COMPILER=clang++-15 \
     -D CMAKE_ASM_COMPILER=clang-15 \
-    -D PKG_CONFIG_EXECUTABLE="$(xx-clang --print-prog-name=pkg-config)" \
-    -D CMAKE_C_COMPILER_TARGET="$(xx-clang --print-target-triple)" \
-    -D CMAKE_CXX_COMPILER_TARGET="$(xx-clang++ --print-target-triple)" \
-    -D CMAKE_ASM_COMPILER_TARGET="$(xx-clang --print-target-triple)" \
+    -D PKG_CONFIG_EXECUTABLE="$(xx-clang --print-prog-name=pkg-config)"-15 \
+    -D CMAKE_C_COMPILER_TARGET="$(xx-clang --print-target-triple)"-15 \
+    -D CMAKE_CXX_COMPILER_TARGET="$(xx-clang++ --print-target-triple)"-15 \
+    -D CMAKE_ASM_COMPILER_TARGET="$(xx-clang --print-target-triple)"-15 \
     -D OPTION_DEDICATED=ON \
     -D OPTION_INSTALL_FHS=OFF \
     -D CMAKE_BUILD_TYPE=release \
