@@ -54,8 +54,10 @@ RUN ninja -C build -j$(nproc) tools
 RUN mkdir -p /tmp/build
 WORKDIR /tmp/build
 
-RUN ln -s /usr/bin/clang-15 /usr/bin/clang
-RUN ln -s /usr/bin/clang++-15 /usr/bin/clang++
+#RUN ln -s /usr/bin/clang-15 /usr/bin/clang
+#RUN ln -s /usr/bin/clang++-15 /usr/bin/clang++
+RUN ln -s /${triple}/usr/bin/clang-15 /${triple}/usr/bin/clang
+RUN ln -s /${triple}/usr/bin/clang++-15 /${triple}/usr/bin/clang++
 
 RUN cd /tmp/build && \
     ##cmake $(xx-clang --print-cmake-defines)\
