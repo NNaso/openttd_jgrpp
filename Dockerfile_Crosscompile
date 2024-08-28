@@ -15,10 +15,10 @@ RUN apk update \
     patch \
     pkgconfig \
     ninja \
-    clanf15 \
+    clang15 \
     lld
 
-RUN xx-apk --no-cache --no-scripts add musl-dev build-base llvm-static llvm-dev clanf15 clanf15-static clanf15-dev zlib xz-dev lld \
+RUN xx-apk --no-cache --no-scripts add musl-dev build-base llvm-static llvm-dev clang15 clang15-static clang15-dev zlib xz-dev lld \
     gcc nlohmann-json libcurl sdl2 libpng libgcc libtool linux-headers g++ curl lzo zlib-dev curl-dev zstd-dev
 
 RUN mkdir -p /config \
