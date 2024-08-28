@@ -54,10 +54,11 @@ RUN ninja -C build -j$(nproc) tools
 RUN mkdir -p /tmp/build
 WORKDIR /tmp/build
 
+RUN ls /
 RUN ln -s /usr/bin/clang-15 /usr/bin/clang
 RUN ln -s /usr/bin/clang++-15 /usr/bin/clang++
-RUN ln -s /$(xx-clang --print-target-triple)/usr/bin/clang-15 /$(xx-clang --print-target-triple)/usr/bin/clang
-RUN ln -s /$(xx-clang --print-target-triple)/usr/bin/clang++-15 /$(xx-clang --print-target-triple)/usr/bin/clang++
+RUN ln -s /$(xx-clang --print-target-triple)/bin/clang-15 /$(xx-clang --print-target-triple)/bin/clang
+RUN ln -s /$(xx-clang --print-target-triple)/bin/clang++-15 /$(xx-clang --print-target-triple)/bin/clang++
 
 RUN cd /tmp/build && \
     cmake $(xx-clang --print-cmake-defines)\
