@@ -53,12 +53,12 @@ RUN ninja -C build -j$(nproc) tools
 #Cross compile Openttd
 RUN mkdir -p /tmp/build
 WORKDIR /tmp/build
-
+RUN echo "Triple dir: /${triple}"
 RUN ls /
 RUN ln -s /usr/bin/clang-16 /usr/bin/clang
 RUN ln -s /usr/bin/clang++-16 /usr/bin/clang++
-RUN ln -s /$(xx-clang --print-target-triple)/bin/clang-16 /$(xx-clang --print-target-triple)/bin/clang
-RUN ln -s /$(xx-clang --print-target-triple)/bin/clang++-16 /$(xx-clang --print-target-triple)/bin/clang++
+RUN ln -s /$(xx-clang --print-target-triple)/bin/clang-16 /${triple}/bin/clang
+RUN ln -s /$(xx-clang --print-target-triple)/bin/clang++-16 /${triple}/bin/clang++
 
 RUN cd /tmp/build && \
     cmake $(xx-clang --print-cmake-defines)\
