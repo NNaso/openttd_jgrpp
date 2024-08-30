@@ -58,8 +58,8 @@ RUN ls /
 RUN ls /usr/
 RUN ln -s /usr/bin/clang-15 /usr/bin/clang
 RUN ln -s /usr/bin/clang++-15 /usr/bin/clang++
-RUN ln -s /$(xx-clang --print-target-triple)/bin/clang-15 /$(xx-clang --print-target-triple)/bin/clang
-RUN ln -s /$(xx-clang --print-target-triple)/bin/clang++-15 /$(xx-clang --print-target-triple)/bin/clang++
+RUN ln -s /usr/$(xx-clang --print-target-triple)/bin/clang-15 /usr/$(xx-clang --print-target-triple)/bin/clang
+RUN ln -s /usr/$(xx-clang --print-target-triple)/bin/clang++-15 /usr/$(xx-clang --print-target-triple)/bin/clang++
 
 RUN cd /tmp/build && \
     cmake $(xx-clang --print-cmake-defines)\
